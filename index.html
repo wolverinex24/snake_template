@@ -1,220 +1,513 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>Knowledge Snake</title>
-		<style>
-html, body, #canvas {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coolie No 1 - Full Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Animated background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(0,0,0,.03) 35px, rgba(0,0,0,.03) 70px);
+            animation: backgroundMove 20s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes backgroundMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(70px, 70px); }
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        #controls {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(42, 42, 42, 0.95) 100%);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-bottom: 2px solid rgba(102, 126, 234, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .game-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .game-title {
+            color: white;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 32px;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .game-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: -5px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        button:hover::before {
+            left: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .icon {
+            font-size: 18px;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        
+        #game-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: #000;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Landscape prompt for mobile - ONLY shown when in fullscreen and still portrait */
+        .rotate-prompt {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .rotate-icon {
+            font-size: 48px;
+            animation: rotate 2s infinite ease-in-out;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes rotate {
+            0%, 100% { transform: rotate(-90deg); }
+            50% { transform: rotate(0deg); }
+        }
+        
+        .rotate-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .rotate-subtext {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        /* Mobile responsive - improved */
+        @media (max-width: 768px) {
+            #controls {
+                padding: 10px 15px;
+            }
+            
+            .title-section {
+                gap: 10px;
+            }
+            
+            .game-logo {
+                width: 35px;
+                height: 35px;
+                font-size: 20px;
+            }
+            
+            .game-title {
+                font-size: 24px;
+                letter-spacing: 1px;
+            }
+            
+            .game-subtitle {
+                display: none;
+            }
+            
+            .btn-group {
+                gap: 10px;
+            }
+            
+            button {
+                padding: 10px 16px;
+                font-size: 12px;
+                letter-spacing: 0.5px;
+            }
+            
+            .icon {
+                font-size: 16px;
+                margin-right: 6px;
+            }
+        }
+        
+        /* Very small mobile devices */
+        @media (max-width: 480px) {
+            #controls {
+                padding: 8px 10px;
+            }
+            
+            .game-logo {
+                width: 30px;
+                height: 30px;
+                font-size: 18px;
+            }
+            
+            .game-title {
+                font-size: 20px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+            
+            .btn-group {
+                gap: 8px;
+            }
+            
+            /* Hide text on very small screens, show only icons */
+            @media (max-width: 350px) {
+                button span:not(.icon) {
+                    display: none;
+                }
+                
+                button .icon {
+                    margin-right: 0;
+                }
+            }
+        }
+        
+        /* Hide controls in fullscreen */
+        #game-container:fullscreen #controls {
+            display: none;
+        }
+        
+        #game-container:fullscreen #game-frame {
+            height: 100vh;
+        }
+        
+        /* Transition effects */
+        #controls, #game-frame {
+            animation: fadeIn 0.8s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="controls">
+            <div class="title-section">
+                <div class="game-logo">🎮</div>
+                <div>
+                    <h1 class="game-title">Coolie No 1</h1>
+                    <div class="game-subtitle">Adventure Game</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button onclick="toggleFullscreen()">
+                    <span class="icon">⛶</span><span>Fullscreen</span>
+                </button>
+                <button class="btn-secondary" onclick="restartGame()">
+                    <span class="icon">🔄</span><span>Restart</span>
+                </button>
+            </div>
+        </div>
+        
+        <iframe id="game-frame" src="game.html"></iframe>
+        
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loader"></div>
+        </div>
+    </div>
+    
+    <!-- Rotation prompt - only shown as fallback -->
+    <div class="rotate-prompt" id="rotatePrompt">
+        <div class="rotate-icon">📱</div>
+        <div class="rotate-text">Please Rotate Your Device</div>
+        <div class="rotate-subtext">This game is best played in landscape mode</div>
+    </div>
 
-body {
-	color: white;
-	background-color: black;
-	overflow: hidden;
-	touch-action: none;
-}
-
-#canvas {
-	display: block;
-}
-
-#canvas:focus {
-	outline: none;
-}
-
-#status, #status-splash, #status-progress {
-	position: absolute;
-	left: 0;
-	right: 0;
-}
-
-#status, #status-splash {
-	top: 0;
-	bottom: 0;
-}
-
-#status {
-	background-color: #242424;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	visibility: hidden;
-}
-
-#status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
-}
-
-#status-splash.show-image--false {
-	display: none;
-}
-
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
-}
-
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
-}
-
-#status-progress, #status-notice {
-	display: none;
-}
-
-#status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
-}
-
-#status-notice {
-	background-color: #5b3943;
-	border-radius: 0.5rem;
-	border: 1px solid #9b3943;
-	color: #e0e0e0;
-	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
-	line-height: 1.3;
-	margin: 0 2rem;
-	overflow: hidden;
-	padding: 1rem;
-	text-align: center;
-	z-index: 1;
-}
-		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="Knowledge Snake.icon.png" />
-<link rel="apple-touch-icon" href="Knowledge Snake.apple-touch-icon.png"/>
-
-	</head>
-	<body>
-		<canvas id="canvas">
-			Your browser does not support the canvas tag.
-		</canvas>
-
-		<noscript>
-			Your browser does not support JavaScript.
-		</noscript>
-
-		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="Knowledge Snake.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
-		</div>
-
-		<script src="Knowledge Snake.js"></script>
-		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"Knowledge Snake","experimentalVK":false,"fileSizes":{"Knowledge Snake.pck":5645712,"Knowledge Snake.wasm":52126319},"focusCanvas":true,"gdextensionLibs":[]};
-const GODOT_THREADS_ENABLED = false;
-const engine = new Engine(GODOT_CONFIG);
-
-(function () {
-	const statusOverlay = document.getElementById('status');
-	const statusProgress = document.getElementById('status-progress');
-	const statusNotice = document.getElementById('status-notice');
-
-	let initializing = true;
-	let statusMode = '';
-
-	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
-		}
-		if (mode === 'hidden') {
-			statusOverlay.remove();
-			initializing = false;
-			return;
-		}
-		statusOverlay.style.visibility = 'visible';
-		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		statusMode = mode;
-	}
-
-	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
-		}
-		const lines = text.split('\n');
-		lines.forEach((line) => {
-			statusNotice.appendChild(document.createTextNode(line));
-			statusNotice.appendChild(document.createElement('br'));
-		});
-	}
-
-	function displayFailureNotice(err) {
-		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
-		setStatusMode('notice');
-		initializing = false;
-	}
-
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
-
-	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
-			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			// There's a chance that installing the service worker would fix the issue
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				// Reload if there was no error.
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			// Display the message as usual
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
-	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
-	}
-}());
-		</script>
-	</body>
+    <script>
+        let isInFullscreen = false;
+        
+        // Check if device is mobile
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // Check if device is in portrait mode
+        function isPortrait() {
+            return window.innerHeight > window.innerWidth;
+        }
+        
+        // Show/hide rotation prompt based on conditions
+        function checkOrientation() {
+            const rotatePrompt = document.getElementById('rotatePrompt');
+            
+            // Only show prompt if: in fullscreen AND on mobile AND still in portrait
+            if (isInFullscreen && isMobileDevice() && isPortrait()) {
+                rotatePrompt.style.display = 'flex';
+            } else {
+                rotatePrompt.style.display = 'none';
+            }
+        }
+        
+        // Fullscreen toggle with orientation lock
+        async function toggleFullscreen() {
+            const container = document.getElementById('game-container');
+            const btn = document.querySelector('button');
+            
+            if (!document.fullscreenElement) {
+                try {
+                    // Request fullscreen
+                    await container.requestFullscreen();
+                    isInFullscreen = true;
+                    
+                    // Try to lock orientation to landscape on mobile
+                    if (isMobileDevice() && screen.orientation && screen.orientation.lock) {
+                        try {
+                            await screen.orientation.lock('landscape');
+                            console.log('Orientation locked to landscape');
+                        } catch (err) {
+                            console.log('Orientation lock not supported, showing manual prompt if needed');
+                            // Check if we need to show the rotation prompt
+                            checkOrientation();
+                        }
+                    } else if (isMobileDevice()) {
+                        // Mobile but no orientation API support - check if prompt needed
+                        checkOrientation();
+                    }
+                } catch (err) {
+                    alert(`Error attempting to enable fullscreen: ${err.message}`);
+                }
+            } else {
+                // Exit fullscreen
+                document.exitFullscreen();
+                isInFullscreen = false;
+                
+                // Hide rotation prompt
+                document.getElementById('rotatePrompt').style.display = 'none';
+                
+                // Unlock orientation when exiting fullscreen
+                if (screen.orientation && screen.orientation.unlock) {
+                    try {
+                        screen.orientation.unlock();
+                        console.log('Orientation unlocked');
+                    } catch (err) {
+                        console.log('Could not unlock orientation:', err);
+                    }
+                }
+            }
+        }
+        
+        // Restart game with loading animation
+        function restartGame() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('active');
+            
+            setTimeout(() => {
+                document.getElementById('game-frame').src = 'game.html';
+                setTimeout(() => {
+                    loadingOverlay.classList.remove('active');
+                }, 1000);
+            }, 300);
+        }
+        
+        // Update button text based on fullscreen state
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.querySelector('button');
+            if (document.fullscreenElement) {
+                btn.innerHTML = '<span class="icon">❎</span><span>Exit</span>';
+                isInFullscreen = true;
+                checkOrientation();
+            } else {
+                btn.innerHTML = '<span class="icon">⛶</span><span>Fullscreen</span>';
+                isInFullscreen = false;
+                document.getElementById('rotatePrompt').style.display = 'none';
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+            if (e.key === 'r' && e.ctrlKey) {
+                e.preventDefault();
+                restartGame();
+            }
+        });
+        
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', checkOrientation);
+        window.addEventListener('resize', checkOrientation);
+    </script>
+</body>
 </html>
-
